@@ -134,7 +134,8 @@ impl Default for AppSettings {
             theme: ThemePreference::System,
             language: LanguagePreference::System,
             restart_after_install: true,
-            usage_analytics: true,
+            // zcus fork: usage analytics off by default (upstream default was true).
+            usage_analytics: false,
             draft: None,
             dismissed_preview_notices: Vec::new(),
             protection_reminder_dismissed: None,
@@ -390,12 +391,15 @@ mod tests {
     use crate::services::test_support::TempDir;
 
     #[test]
-    fn analytics_defaults_on_and_respects_a_saved_opt_out() {
+    fn analytics_defaults_off_and_respects_a_saved_opt_in() {
         let legacy: AppSettings = serde_json::from_str("{}").unwrap();
         let opted_out: AppSettings = serde_json::from_str(r#"{"usageAnalytics":false}"#).unwrap();
-        assert!(AppSettings::default().usage_analytics);
-        assert!(legacy.usage_analytics);
+        let opted_in: AppSettings = serde_json::from_str(r#"{"usageAnalytics":true}"#).unwrap();
+        // zcus fork: analytics off by default; an explicit saved opt-in is still honoured.
+        assert!(!AppSettings::default().usage_analytics);
+        assert!(!legacy.usage_analytics);
         assert!(!opted_out.usage_analytics);
+        assert!(opted_in.usage_analytics);
     }
 
     #[test]
