@@ -1,0 +1,39 @@
+name: Build RC (zcus tester bundle)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-rc:
+    name: Build tester bundle (Linux cross-build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install system prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm p7zip-full
+          pwsh --version
+          clang-cl --version | head -1
+      - name: Download pinned Atlas Toolbox v0.2.0 (hash-verified)
+        run: |
+          curl -sL -o /tmp/AtlasToolbox-Setup.exe https://github.com/Atlas-OS/atlas-toolbox/releases/download/v0.2.0/AtlasToolbox-Setup.exe
+          echo "90fa49981192e4427ce29b500bc9e2bcd0d1e47453fb7b76fb36d46ea7fa30a0  /tmp/AtlasToolbox-Setup.exe" | sha256sum -c -
+      - name: Install cross-build tools
+        run: tools/release/setup-linux.sh
+      - name: Build RC bundle
+        run: tools/release/build-rc.sh --rc 1 --toolbox /tmp/AtlasToolbox-Setup.exe --toolbox-version 0.2.0
+      - name: Upload RC bundle
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: atlas-zcus-rc
+          path: artifacts/rc/
+          if-no-files-found: error
+          retention-days: 14
